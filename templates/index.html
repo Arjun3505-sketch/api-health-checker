@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Health Monitor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #1a1a2e;
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        header .tagline {
+            font-size: 0.8rem;
+            color: #8892b0;
+            margin-top: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #64ffda;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.4
+            }
+        }
+
+        .last-checked {
+            font-size: 0.78rem;
+            color: #8892b0;
+        }
+
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .stat {
+            background: white;
+            border-radius: 10px;
+            padding: 0.75rem 1.25rem;
+            text-align: center;
+            min-width: 90px;
+            border: 1px solid #e8ecf0;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .stat.green .stat-value {
+            color: #22c55e;
+        }
+
+        .stat.red .stat-value {
+            color: #ef4444;
+        }
+
+        .stat.blue .stat-value {
+            color: #3b82f6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1.1rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2d2d4e;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .add-form {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e8ecf0;
+            display: none;
+        }
+
+        .add-form.open {
+            display: block;
+        }
+
+        .add-form h3 {
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            color: #1a1a2e;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .form-group label {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input {
+            padding: 0.55rem 0.85rem;
+            border: 1px solid #dde1e7;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #1a1a2e;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-sm {
+            padding: 0.45rem 1rem;
+            font-size: 0.82rem;
+            border-radius: 7px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-confirm {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: #2d2d4e;
+        }
+
+        .btn-cancel {
+            background: #f0f2f5;
+            color: #555;
+        }
+
+        .btn-cancel:hover {
+            background: #e0e2e5;
+        }
+
+        .form-error {
+            font-size: 0.78rem;
+            color: #ef4444;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid #e8ecf0;
+            position: relative;
+            transition: box-shadow 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #1a1a2e;
+        }
+
+        .card-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.up {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge.down {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge.timeout {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge.degraded {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge.error {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge.checking {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #ccc;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: color 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+
+        .card-meta {
+            font-size: 0.82rem;
+            color: #888;
+            margin-bottom: 0.4rem;
+        }
+
+        .card-url {
+            font-size: 0.73rem;
+            color: #bbb;
+            word-break: break-all;
+        }
+
+        .response-bar {
+            height: 3px;
+            border-radius: 2px;
+            margin-top: 0.85rem;
+            background: #f0f2f5;
+            overflow: hidden;
+        }
+
+        .response-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .fill-fast {
+            background: #22c55e;
+        }
+
+        .fill-medium {
+            background: #f59e0b;
+        }
+
+        .fill-slow {
+            background: #ef4444;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #aaa;
+            grid-column: 1/-1;
+        }
+
+        .empty-state p {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #1a1a2e;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div>
+            <h1>API Health Monitor</h1>
+            <div class="tagline">Real-time uptime and response tracking</div>
+        </div>
+        <div class="header-right">
+            <span class="status-dot"></span>
+            <span class="last-checked" id="last-checked">Initializing...</span>
+        </div>
+    </header>
+
+    <div class="main">
+        <div class="top-bar">
+            <div class="stats">
+                <div class="stat green">
+                    <div class="stat-value" id="count-up">-</div>
+                    <div class="stat-label">Online</div>
+                </div>
+                <div class="stat red">
+                    <div class="stat-value" id="count-down">-</div>
+                    <div class="stat-label">Offline</div>
+                </div>
+                <div class="stat blue">
+                    <div class="stat-value" id="count-total">-</div>
+                    <div class="stat-label">Total</div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="fetchStatus()">Refresh</button>
+                <button class="btn btn-success" onclick="toggleForm()">+ Add Endpoint</button>
+            </div>
+        </div>
+
+        <div class="add-form" id="add-form">
+            <h3>Add new endpoint</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Display name</label>
+                    <input type="text" id="input-name" placeholder="e.g. My API" />
+                </div>
+                <div class="form-group">
+                    <label>URL</label>
+                    <input type="text" id="input-url" placeholder="https://api.example.com" />
+                </div>
+            </div>
+            <div class="form-error" id="form-error"></div>
+            <div class="form-actions">
+                <button class="btn-sm btn-confirm" onclick="submitEndpoint()">Add</button>
+                <button class="btn-sm btn-cancel" onclick="toggleForm()">Cancel</button>
+            </div>
+        </div>
+
+        <div class="grid" id="grid">
+            <div class="empty-state">
+                <strong>Loading...</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show' + (isError ? ' error' : '');
+            setTimeout(() => t.className = 'toast', 2800);
+        }
+
+        function toggleForm() {
+            const f = document.getElementById('add-form');
+            f.classList.toggle('open');
+            if (f.classList.contains('open')) {
+                document.getElementById('input-name').focus();
+                document.getElementById('form-error').style.display = 'none';
+            }
+        }
+
+        async function submitEndpoint() {
+            const name = document.getElementById('input-name').value.trim();
+            const url = document.getElementById('input-url').value.trim();
+            const err = document.getElementById('form-error');
+
+            if (!name || !url) { err.textContent = 'Both fields are required.'; err.style.display = 'block'; return; }
+            if (!url.startsWith('http')) { err.textContent = 'URL must start with http:// or https://'; err.style.display = 'block'; return; }
+
+            const res = await fetch('/endpoints', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, url })
+            });
+
+            if (res.ok) {
+                document.getElementById('input-name').value = '';
+                document.getElementById('input-url').value = '';
+                err.style.display = 'none';
+                toggleForm();
+                showToast('Endpoint added successfully');
+                fetchStatus();
+            } else {
+                const data = await res.json();
+                err.textContent = data.error || 'Something went wrong';
+                err.style.display = 'block';
+            }
+        }
+
+        async function deleteEndpoint(url, name) {
+            if (!confirm(`Remove "${name}" from monitoring?`)) return;
+            const res = await fetch('/endpoints', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            if (res.ok) { showToast('Endpoint removed'); fetchStatus(); }
+            else showToast('Failed to remove endpoint', true);
+        }
+
+        function getBarClass(ms) {
+            if (!ms) return 'fill-slow';
+            if (ms < 300) return 'fill-fast';
+            if (ms < 800) return 'fill-medium';
+            return 'fill-slow';
+        }
+
+        function getBarWidth(ms) {
+            if (!ms) return '100';
+            if (ms < 300) return Math.max(10, (ms / 300) * 60);
+            if (ms < 800) return 60 + ((ms - 300) / 500) * 25;
+            return 85 + Math.min(15, ((ms - 800) / 1000) * 15);
+        }
+
+        async function fetchStatus() {
+            document.getElementById('last-checked').textContent = 'Checking...';
+            const res = await fetch('/check');
+            const data = await res.json();
+            const grid = document.getElementById('grid');
+
+            if (data.length === 0) {
+                grid.innerHTML = `<div class="empty-state"><strong>No endpoints yet</strong><p>Click "+ Add Endpoint" to start monitoring.</p></div>`;
+                document.getElementById('count-up').textContent = 0;
+                document.getElementById('count-down').textContent = 0;
+                document.getElementById('count-total').textContent = 0;
+                document.getElementById('last-checked').textContent = 'No endpoints';
+                return;
+            }
+
+            const up = data.filter(e => e.status === 'up').length;
+            const down = data.length - up;
+            document.getElementById('count-up').textContent = up;
+            document.getElementById('count-down').textContent = down;
+            document.getElementById('count-total').textContent = data.length;
+
+            grid.innerHTML = '';
+            data.forEach(ep => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+        <div class="card-top">
+          <span class="card-name">${ep.name}</span>
+          <div class="card-right">
+            <span class="badge ${ep.status}">${ep.status}</span>
+            <button class="delete-btn" onclick="deleteEndpoint('${ep.url}', '${ep.name}')" title="Remove">&#x2715;</button>
+          </div>
+        </div>
+        <div class="card-meta">
+          ${ep.response_time ? ep.response_time + ' ms' : 'No response'}
+          ${ep.status_code ? ' &bull; HTTP ' + ep.status_code : ''}
+        </div>
+        <div class="card-url">${ep.url}</div>
+        <div class="response-bar">
+          <div class="response-fill ${getBarClass(ep.response_time)}" style="width:${getBarWidth(ep.response_time)}%"></div>
+        </div>`;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('last-checked').textContent = 'Last checked: ' + new Date().toLocaleTimeString();
+        }
+
+        document.getElementById('input-url').addEventListener('keydown', e => { if (e.key === 'Enter') submitEndpoint(); });
+        document.getElementById('input-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('input-url').focus(); });
+
+        fetchStatus();
+        setInterval(fetchStatus, 30000);
+    </script>
+</body>
+
+</html>
