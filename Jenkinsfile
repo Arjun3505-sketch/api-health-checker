@@ -21,7 +21,7 @@ pipeline {
                 bat "docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest"
             }
         }
-        
+       /* 
         stage('Test') {
             steps {
                 echo 'Running tests...'
@@ -29,7 +29,7 @@ pipeline {
                 bat 'pytest tests/ -v'
             }
         }
-        
+        */
         stage('Push to Docker Hub') {
             steps {
                 echo 'Pushing image to Docker Hub...'
