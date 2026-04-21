@@ -21,7 +21,8 @@ pipeline {
                 bat "docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest"
             }
         }
-       /* 
+        
+        /*
         stage('Test') {
             steps {
                 echo 'Running tests...'
@@ -30,6 +31,7 @@ pipeline {
             }
         }
         */
+        
         stage('Push to Docker Hub') {
             steps {
                 echo 'Pushing image to Docker Hub...'
@@ -37,8 +39,10 @@ pipeline {
                     credentialsId: 'dockerhub-creds',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS')]) {
-                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
-                    bat "docker push %DOCKER_IMAGE%:latest"
+                    bat '''
+                        echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
+                        docker push %DOCKER_IMAGE%:latest
+                    '''
                 }
             }
         }
