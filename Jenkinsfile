@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_IMAGE = 'harshit0400/api-health-checker'
+    }
+    
+    stages {
+        stage('Clone') {
+            steps {
+                echo 'Cloning repository...'
+                git branch: 'main',
+                    url: 'https://github.com/Arjun3505-sketch/api-health-checker.git'
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                bat "docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% ."
+                bat "docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest"
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                bat 'pip install -r requirements.txt'
+                bat 'pytest tests/ -v'
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                echo 'Pushing image to Docker Hub...'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS')]) {
+                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                    bat "docker push %DOCKER_IMAGE%:latest"
+                }
+            }
+        }
+    }
+    
+    post {
+        success { 
+            echo '✅ Pipeline succeeded — deployment complete' 
+        }
+        failure { 
+            echo '❌ Pipeline failed — check logs above' 
+        }
+    }
+}
