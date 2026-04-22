@@ -1,11 +1,13 @@
 pipeline {
+
     agent any
-    
+
     environment {
         DOCKER_IMAGE = 'harshit0400/api-health-checker'
     }
-    
+
     stages {
+
         stage('Clone') {
             steps {
                 echo 'Cloning repository...'
@@ -13,7 +15,7 @@ pipeline {
                     url: 'https://github.com/Arjun3505-sketch/api-health-checker.git'
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
@@ -21,17 +23,18 @@ pipeline {
                 bat "docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest"
             }
         }
-        
-        /*
+
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                bat 'pip install -r requirements.txt'
-                bat 'pytest tests/ -v'
+                bat 'python --version'
+                bat 'python -m pip install --upgrade pip'
+                bat 'python -m pip install -r requirements.txt'
+                bat 'python -m pip install pytest'
+                bat 'python -m pytest tests/ -v'
             }
         }
-        */
-        
+
         stage('Push to Docker Hub') {
             steps {
                 echo 'Pushing image to Docker Hub...'
@@ -47,7 +50,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         success { 
             echo '✅ Pipeline succeeded — deployment complete' 
