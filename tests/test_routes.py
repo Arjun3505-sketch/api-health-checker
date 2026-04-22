@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch, MagicMock
 from app import create_app
 
 @pytest.fixture
@@ -13,10 +14,17 @@ def test_index_loads(client):
     assert response.status_code == 200
 
 def test_check_returns_list(client):
-    response = client.get('/check')
-    assert response.status_code == 200
-    data = response.get_json()
-    assert isinstance(data, list)
+    mock_endpoints = [
+        {'endpoint_url': 'https://api.github.com', 'name': 'GitHub API'},
+        {'endpoint_url': 'https://httpbin.org/get', 'name': 'HTTPBin'}
+    ]
+    with patch('app.routes.get_all_endpoints', return_value=mock_endpoints), \
+         patch('app.routes.save_result', return_value=None):
+        response = client.get('/check')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        assert len(data) == 2
 
 def test_add_endpoint_validation(client):
     response = client.post('/endpoints',
