@@ -52,21 +52,19 @@ pipeline {
         }
 
         stage('Deploy to EC2') {
-            steps {
-                echo 'Deploying to EC2 via SSH...'
+    steps {
+        echo 'Deploying to EC2 via SSH...'
 
-                sshagent(['ec2-ssh-key']) {
-                    withCredentials([
-                        string(credentialsId: 'aws-access-key-id', variable: 'AWS_KEY_ID'),
-                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET')
-                    ]) {
-                        bat """
-                        ssh -o StrictHostKeyChecking=no ubuntu@%EC2_HOST% "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
-                        """
-                    }
-                }
-            }
+        withCredentials([
+            string(credentialsId: 'aws-access-key-id', variable: 'AWS_KEY_ID'),
+            string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET')
+        ]) {
+            bat """
+            ssh -o StrictHostKeyChecking=no -i C:\\Users\\Lenovo\\.ssh\\api-health-key.pem ubuntu@16.171.151.199 "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
+            """
         }
+    }
+}
     }
 
     post {
