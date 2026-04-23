@@ -60,8 +60,8 @@ pipeline {
             string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET')
         ]) {
             bat """
-            ssh -o StrictHostKeyChecking=no -i C:\\Users\\Lenovo\\.ssh\\api-health-key.pem ubuntu@16.171.151.199 "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
-            """
+ssh -o StrictHostKeyChecking=no -i C:\\ProgramData\\Jenkins\\.jenkins\\api-health-key.pem ubuntu@%EC2_HOST% "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
+"""
         }
     }
 }
