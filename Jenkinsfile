@@ -1,13 +1,12 @@
 pipeline {
-
     agent any
 
     environment {
         DOCKER_IMAGE = 'harshit0400/api-health-checker'
+        EC2_HOST = '16.171.151.199'
     }
 
     stages {
-
         stage('Clone') {
             steps {
                 echo 'Cloning repository...'
@@ -37,7 +36,7 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing image to Docker Hub...'
+                echo 'Pushing to Docker Hub...'
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
                     usernameVariable: 'DOCKER_USER',
@@ -50,28 +49,24 @@ pipeline {
             }
         }
 
-     stage('Deploy with Ansible') {
-    steps {
-        echo 'Deploying to EC2 via Ansible...'
-        bat '''
-        wsl bash -c "
-        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID &&
-        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY &&
-        export AWS_REGION=eu-north-1 &&
-        cd /mnt/d/DEVOPS_PROJ/api-health-checker &&
-        ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
-        "
-        '''
-    }
-}
+        stage('Deploy to EC2') {
+            steps {
+                echo 'Deploying to EC2 via SSH...'
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY'),
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET')
+                ]) {
+                    bat """
+                        ssh -o StrictHostKeyChecking=no -i %SSH_KEY% ubuntu@%EC2_HOST% "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
+                    """
+                }
+            }
+        }
     }
 
     post {
-        success { 
-            echo '✅ Pipeline succeeded — deployment complete' 
-        }
-        failure { 
-            echo '❌ Pipeline failed — check logs above' 
-        }
+        success { echo 'Pipeline succeeded — app deployed to EC2' }
+        failure { echo 'Pipeline failed — check logs above' }
     }
 }
