@@ -49,6 +49,21 @@ pipeline {
                 }
             }
         }
+
+     stage('Deploy with Ansible') {
+    steps {
+        echo 'Deploying to EC2 via Ansible...'
+        bat '''
+        wsl bash -c "
+        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID &&
+        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY &&
+        export AWS_REGION=eu-north-1 &&
+        cd /mnt/d/DEVOPS_PROJ/api-health-checker &&
+        ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
+        "
+        '''
+    }
+}
     }
 
     post {
