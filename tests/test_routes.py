@@ -19,7 +19,8 @@ def test_check_returns_list(client):
         {'endpoint_url': 'https://httpbin.org/get', 'name': 'HTTPBin'}
     ]
     with patch('app.routes.get_all_endpoints', return_value=mock_endpoints), \
-         patch('app.routes.save_result', return_value=None):
+         patch('app.routes.save_result', return_value=None), \
+         patch('app.routes.get_uptime_percentage', return_value=95.0):
         response = client.get('/check')
         assert response.status_code == 200
         data = response.get_json()
