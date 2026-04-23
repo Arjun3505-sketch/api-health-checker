@@ -55,3 +55,10 @@ def add_endpoint(name, url):
 def delete_endpoint(url):
     table = get_endpoints_table()
     table.delete_item(Key={'endpoint_url': url})
+
+def get_uptime_percentage(endpoint_url):
+    records = get_history(endpoint_url, limit=20)
+    if not records:
+        return None
+    up_count = sum(1 for r in records if r.get('status') == 'up')
+    return round((up_count / len(records)) * 100, 1)

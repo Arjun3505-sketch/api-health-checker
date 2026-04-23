@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, render_template, request
 import requests
 import time
-from .dynamo import save_result, get_history, get_all_endpoints, add_endpoint, delete_endpoint
+from .dynamo import save_result, get_history, get_all_endpoints, add_endpoint, delete_endpoint, get_uptime_percentage
 
 main = Blueprint('main', __name__)
 
@@ -36,6 +36,7 @@ def check_all():
     for ep in endpoints:
         result = check_endpoint(ep['name'], ep['endpoint_url'])
         save_result(ep['endpoint_url'], result['status_code'], result['response_time'] or 0, result['status'])
+        result['uptime'] = get_uptime_percentage(ep['endpoint_url'])
         results.append(result)
     return jsonify(results)
 

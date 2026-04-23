@@ -1035,6 +1035,10 @@
               <div class="metric-label">Status</div>
               <div class="metric-value">${httpLabel}</div>
             </div>
+            <div class="metric">
+            <div class="metric-label">Uptime</div>
+            <div class="metric-value ${ep.uptime >= 90 ? 'fast' : ep.uptime >= 70 ? 'medium' : 'slow'}">${ep.uptime !== null && ep.uptime !== undefined ? ep.uptime + '%' : '—'}</div>
+            </div>
           </div>
           <div class="chart-wrap">
             <canvas id="${canvasId}" height="44"></canvas>
