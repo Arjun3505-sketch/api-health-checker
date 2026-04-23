@@ -7,6 +7,7 @@ pipeline {
     }
 
     stages {
+
         stage('Clone') {
             steps {
                 echo 'Cloning repository...'
@@ -40,10 +41,11 @@ pipeline {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
                     usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS')]) {
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     bat '''
-                        echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
-                        docker push %DOCKER_IMAGE%:latest
+                    echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
+                    docker push %DOCKER_IMAGE%:latest
                     '''
                 }
             }
@@ -52,21 +54,27 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 echo 'Deploying to EC2 via SSH...'
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY'),
-                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET')
-                ]) {
-                    bat """
-                        ssh -o StrictHostKeyChecking=no -i %SSH_KEY% ubuntu@%EC2_HOST% "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
-                    """
+
+                sshagent(['ec2-ssh-key']) {
+                    withCredentials([
+                        string(credentialsId: 'aws-access-key-id', variable: 'AWS_KEY_ID'),
+                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET')
+                    ]) {
+                        bat """
+                        ssh -o StrictHostKeyChecking=no ubuntu@%EC2_HOST% "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
+                        """
+                    }
                 }
             }
         }
     }
 
     post {
-        success { echo 'Pipeline succeeded — app deployed to EC2' }
-        failure { echo 'Pipeline failed — check logs above' }
+        success {
+            echo 'Pipeline succeeded — app deployed to EC2'
+        }
+        failure {
+            echo 'Pipeline failed — check logs above'
+        }
     }
 }
