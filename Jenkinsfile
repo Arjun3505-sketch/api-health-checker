@@ -13,21 +13,19 @@ pipeline {
             }
         }
 
-        // ✅ RUN TESTS FIRST (IMPORTANT)
+        // ✅ UPDATED TEST STAGE
         stage('Test') {
             steps {
-                echo 'Running tests...'
+                echo 'Running tests with coverage...'
                 bat 'python -m pip install --upgrade pip'
                 bat 'python -m pip install -r requirements.txt'
-                bat 'python -m pip install pytest coverage'
+                bat 'python -m pip install pytest pytest-cov'
 
-                // generate coverage.xml
-                bat 'coverage run -m pytest'
-                bat 'coverage xml'
+                // Generate coverage.xml for SonarQube
+                bat 'pytest --cov=. --cov-report=xml'
             }
         }
 
-        // ✅ THEN SONAR
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -38,15 +36,6 @@ pipeline {
                 }
             }
         }
-
-        // ✅ INCREASE TIMEOUT
-       // stage('Quality Gate') {
-         //   steps {
-           //     timeout(time: 5, unit: 'MINUTES') {
-             //       waitForQualityGate abortPipeline: true
-               // }
-       //     }
-       // }
 
         stage('Build Docker Image') {
             steps {
@@ -69,6 +58,15 @@ pipeline {
                     '''
                 }
             }
+        }
+    }
+    
+    post {
+        success { 
+            echo '✅ Pipeline succeeded' 
+        }
+        failure { 
+            echo '❌ Pipeline failed — check logs above' 
         }
     }
 }
