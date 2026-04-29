@@ -13,6 +13,21 @@ pipeline {
             }
         }
 
+        // ✅ RUN TESTS FIRST (IMPORTANT)
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                bat 'python -m pip install --upgrade pip'
+                bat 'python -m pip install -r requirements.txt'
+                bat 'python -m pip install pytest coverage'
+
+                // generate coverage.xml
+                bat 'coverage run -m pytest'
+                bat 'coverage xml'
+            }
+        }
+
+        // ✅ THEN SONAR
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -24,10 +39,10 @@ pipeline {
             }
         }
 
-        // 🔥 IMPORTANT — enforce code quality
+        // ✅ INCREASE TIMEOUT
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -38,18 +53,6 @@ pipeline {
                 echo 'Building Docker image...'
                 bat "docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% ."
                 bat "docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest"
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                echo 'Running tests with coverage...'
-                bat 'python -m pip install --upgrade pip'
-                bat 'python -m pip install -r requirements.txt'
-                bat 'python -m pip install pytest pytest-cov'
-                
-                // 🔥 generate coverage.xml for SonarQube
-                bat 'pytest --cov=. --cov-report=xml'
             }
         }
         
@@ -66,15 +69,6 @@ pipeline {
                     '''
                 }
             }
-        }
-    }
-    
-    post {
-        success { 
-            echo '✅ Pipeline succeeded' 
-        }
-        failure { 
-            echo '❌ Pipeline failed — check logs above' 
         }
     }
 }
