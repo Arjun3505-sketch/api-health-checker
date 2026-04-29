@@ -63,10 +63,10 @@ pipeline {
     
     post {
         success { 
-            echo '✅ Pipeline succeeded' 
+            echo 'Pipeline succeeded' 
         }
         failure { 
-            echo '❌ Pipeline failed — check logs above' 
+            echo 'Pipeline failed — check logs above' 
         }
     }
 }
