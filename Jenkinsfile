@@ -3,6 +3,7 @@ pipeline {
     
     environment {
         DOCKER_IMAGE = 'harshit0400/api-health-checker'
+        EC2_HOST = '16.171.151.199'
     }
     
     stages {
@@ -13,15 +14,12 @@ pipeline {
             }
         }
 
-        // ✅ UPDATED TEST STAGE
         stage('Test') {
             steps {
                 echo 'Running tests with coverage...'
                 bat 'python -m pip install --upgrade pip'
                 bat 'python -m pip install -r requirements.txt'
                 bat 'python -m pip install pytest pytest-cov'
-
-                // Generate coverage.xml for SonarQube
                 bat 'pytest --cov=. --cov-report=xml'
             }
         }
@@ -59,11 +57,26 @@ pipeline {
                 }
             }
         }
+
+        // 🚀 DEPLOYMENT STAGE
+        stage('Deploy to EC2') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    bat """
+                    ssh -o StrictHostKeyChecking=no ubuntu@%EC2_HOST% ^
+                    "docker pull harshit0400/api-health-checker:latest && ^
+                     docker stop app || true && ^
+                     docker rm app || true && ^
+                     docker run -d -p 5001:5001 --env-file /home/ubuntu/.env --name app harshit0400/api-health-checker:latest"
+                    """
+                }
+            }
+        }
     }
     
     post {
         success { 
-            echo '✅ Pipeline succeeded' 
+            echo '✅ Pipeline succeeded — deployed to EC2' 
         }
         failure { 
             echo '❌ Pipeline failed — check logs above' 
