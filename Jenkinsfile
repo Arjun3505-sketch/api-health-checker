@@ -1,13 +1,11 @@
 pipeline {
     agent any
-
+    
     environment {
         DOCKER_IMAGE = 'harshit0400/api-health-checker'
-        EC2_HOST = '16.171.151.199'
     }
-
+    
     stages {
-
         stage('Clone') {
             steps {
                 echo 'Cloning repository...'
@@ -15,7 +13,7 @@ pipeline {
                     url: 'https://github.com/Arjun3505-sketch/api-health-checker.git'
             }
         }
-
+        
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
@@ -23,56 +21,39 @@ pipeline {
                 bat "docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest"
             }
         }
-
+        
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                bat 'python --version'
                 bat 'python -m pip install --upgrade pip'
                 bat 'python -m pip install -r requirements.txt'
                 bat 'python -m pip install pytest'
                 bat 'python -m pytest tests/ -v'
             }
         }
-
+        
         stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing to Docker Hub...'
+                echo 'Pushing image to Docker Hub...'
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
                     usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                    passwordVariable: 'DOCKER_PASS')]) {
                     bat '''
-                    echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
-                    docker push %DOCKER_IMAGE%:latest
+                        echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
+                        docker push %DOCKER_IMAGE%:latest
                     '''
                 }
             }
         }
-
-        stage('Deploy to EC2') {
-    steps {
-        echo 'Deploying to EC2 via SSH...'
-
-        withCredentials([
-            string(credentialsId: 'aws-access-key-id', variable: 'AWS_KEY_ID'),
-            string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET')
-        ]) {
-            bat """
-ssh -o StrictHostKeyChecking=no -i C:\\ProgramData\\Jenkins\\.jenkins\\api-health-key.pem ubuntu@%EC2_HOST% "/home/ubuntu/deploy.sh %AWS_KEY_ID% %AWS_SECRET% eu-north-1"
-"""
-        }
     }
-}
-    }
-
+    
     post {
-        success {
-            echo 'Pipeline succeeded — app deployed to EC2'
+        success { 
+            echo '✅ Pipeline succeeded' 
         }
-        failure {
-            echo 'Pipeline failed — check logs above'
+        failure { 
+            echo '❌ Pipeline failed — check logs above' 
         }
     }
 }
