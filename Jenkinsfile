@@ -24,6 +24,15 @@ pipeline {
             }
         }
 
+        // 🔥 IMPORTANT — enforce code quality
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
@@ -34,11 +43,13 @@ pipeline {
         
         stage('Test') {
             steps {
-                echo 'Running tests...'
+                echo 'Running tests with coverage...'
                 bat 'python -m pip install --upgrade pip'
                 bat 'python -m pip install -r requirements.txt'
-                bat 'python -m pip install pytest'
-                bat 'python -m pytest tests/ -v'
+                bat 'python -m pip install pytest pytest-cov'
+                
+                // 🔥 generate coverage.xml for SonarQube
+                bat 'pytest --cov=. --cov-report=xml'
             }
         }
         
