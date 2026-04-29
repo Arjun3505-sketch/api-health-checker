@@ -6,14 +6,6 @@ pipeline {
     }
     
     stages {
-        stage('Clone') {
-            steps {
-                echo 'Cloning repository...'
-                git branch: 'main',
-                    url: 'https://github.com/Arjun3505-sketch/api-health-checker.git'
-            }
-        }
-        
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
